@@ -7,6 +7,7 @@ module.exports = {
     "./src/components/Sidebar.js",
     "./src/components/InputField.js",
     "./src/components/Button.js",
+    "./src/components/ProductAddModal.js",
   ],
   theme: {
     extend: {},
