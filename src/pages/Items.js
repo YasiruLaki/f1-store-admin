@@ -10,12 +10,16 @@ function Items() {
     const [name, setName] = useState('');
     const [shortName, setShortName] = useState('');
     const [price, setPrice] = useState('');
+    const [salePrice, setSalePrice] = useState('');
     const [category, setCategory] = useState('');
     const [description, setDescription] = useState('');
-    const [productsByCategory, setProductsByCategory] = useState({});
     const [productId, setProductId] = useState('');
     const [editMode, setEditMode] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [filteredCategory, setFilteredCategory] = useState('');
+    const [productsByCategory, setProductsByCategory] = useState([]);
+    const [search, setSearch] = useState('');
+    const [sizes, setSizes] = useState([]);
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => {
@@ -60,16 +64,18 @@ function Items() {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await fetch('http://localhost:8888/.netlify/functions/fetchAdminProducts');
+                const response = await fetch(`https://f1-store-backend.netlify.app/.netlify/functions/fetchAdminProducts?filteredCategory=${filteredCategory}`);
                 const data = await response.json();
                 setProductsByCategory(data);
+
             } catch (error) {
                 console.error('Error fetching products:', error);
             }
         };
 
         fetchProducts();
-    }, []);
+    }, [filteredCategory]);
+
 
 
     const generateId = () => {
@@ -81,19 +87,21 @@ function Items() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        generateId();
+        if (!selectedProduct) {
+            generateId();
+        }
 
-        const method = selectedProduct ? 'PUT' : 'POST'; // Use 'PUT' if a product is selected, otherwise 'POST'
-        const url = selectedProduct
-            ? `http://localhost:8888/.netlify/functions/submitItem` // Your Netlify function endpoint
-            : `http://localhost:8888/.netlify/functions/submitItem`;
+        const method = selectedProduct ? 'PUT' : 'POST';
+        const url = `http://localhost:8888/.netlify/functions/submitItem`;
 
         const requestBody = {
-            productID: selectedProduct ? selectedProduct.productID : productId, // Include productID only for update
+            productID: selectedProduct ? selectedProduct.productID : productId,
             name,
             shortName,
             price,
+            salePrice,
             category,
+            sizes,
             description,
             tags,
             images,
@@ -129,10 +137,12 @@ function Items() {
         setName(product.name);
         setShortName(product.shortName);
         setPrice(product.price);
+        setSalePrice(product.salePrice);
         setCategory(product.category);
+        setSizes(product.sizes || []); // Ensure sizes is initialized as an array
         setDescription(product.description);
-        setTags(product.tags);
-        setImages(product.images);
+        setTags(product.tags || []); // Ensure tags is initialized as an array
+        setImages(product.images || []); // Ensure images is initialized as an array
         openModal();
     };
 
@@ -144,9 +154,29 @@ function Items() {
         setShortName('');
         setPrice('');
         setCategory('');
+        setSizes([]); // Reset sizes to an empty array
         setDescription('');
-        setTags([]);
-        setImages([]);
+        setTags([]); // Reset tags to an empty array
+        setImages([]); // Reset images to an empty array
+    };
+
+    const handleSearch = (products) => {
+        if (!search) return products;
+        return products.filter((product) =>
+            product.name.toLowerCase().includes(search.toLowerCase()) ||
+            product.productID.toLowerCase().includes(search.toLowerCase())
+        );
+    };
+
+    const handleSizeChange = (e) => {
+        const { name, checked } = e.target;
+
+        // Safely update the sizes array
+        if (checked) {
+            setSizes((prevSizes) => [...prevSizes, name]); // Add size
+        } else {
+            setSizes((prevSizes) => prevSizes.filter((size) => size !== name)); // Remove size
+        }
     };
 
     return (
@@ -163,6 +193,7 @@ function Items() {
                         <select
                             id="filter"
                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 p-2.5"
+                            onChange={(e) => setFilteredCategory(e.target.value)}
                         >
                             <option value="">All</option>
                             <option value="Tshirts">Tshirts</option>
@@ -186,6 +217,7 @@ function Items() {
                     </div>
                 </div>
             </div>
+
 
 
             {isModalOpen && (
@@ -305,6 +337,98 @@ function Items() {
                                         </select>
                                     </div>
                                     <div className="col-span-2">
+                                        <label htmlFor="sizes" className="block mb-2 text-sm font-medium text-gray-900">
+                                            Sizes
+                                        </label>
+
+                                        {category === 'Tshirts' || category === 'Hoodies' || category === 'Jackets' || category === 'Boxers' ? (
+                                            <div className="flex items-center gap-4">
+                                                {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((size) => (
+                                                    <div key={size}>
+                                                        <input
+                                                            type="checkbox"
+                                                            id={size}
+                                                            name={size}
+                                                            className="mr-2 hidden peer"
+                                                            checked={sizes.includes(size)}
+                                                            onChange={handleSizeChange}
+                                                        />
+                                                        <label
+                                                            htmlFor={size}
+                                                            className="p-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-300 cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-100"
+                                                        >
+                                                            {size}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : category === 'Posters' ? (
+                                            <div className="flex items-center gap-4">
+                                                {['A4', 'A3', 'A2', 'A1', 'A0'].map((size) => (
+                                                    <div key={size}>
+                                                        <input
+                                                            type="checkbox"
+                                                            id={size}
+                                                            name={size}
+                                                            className="mr-2 hidden peer"
+                                                            checked={sizes.includes(size)}
+                                                            onChange={handleSizeChange}
+                                                        />
+                                                        <label
+                                                            htmlFor={size}
+                                                            className="p-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-300 cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-100"
+                                                        >
+                                                            {size}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : category === 'Phone Cases' ? (
+                                            <div className="flex items-center gap-4 flex-wrap">
+                                                {['iPhone 11', 'iPhone 12', 'iPhone 13', 'Samsung S21', 'Samsung S22'].map((size) => (
+                                                    <div key={size}>
+                                                        <input
+                                                            type="checkbox"
+                                                            id={size}
+                                                            name={size}
+                                                            className="mr-2 hidden peer"
+                                                            checked={sizes.includes(size)}
+                                                            onChange={handleSizeChange}
+                                                        />
+                                                        <label
+                                                            htmlFor={size}
+                                                            className="p-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-300 cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-100"
+                                                        >
+                                                            {size}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">(Sizes only available for selected categories only)</p>
+                                        )}
+                                    </div>
+                                    {editMode && (
+                                        <div className="col-span-2">
+                                            <label
+                                                htmlFor="salePrice"
+                                                className="block mb-2 text-sm font-medium text-gray-900"
+                                            >
+                                                Add a Sale Price
+                                            </label>
+                                            <input
+                                                type="number"
+                                                name="salePrice"
+                                                id="salePrice"
+                                                value={salePrice}
+                                                onChange={(e) => setSalePrice(e.target.value)}
+                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                                                placeholder="$2999"
+                                                required
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="col-span-2">
                                         <label
                                             htmlFor="description"
                                             className="block mb-2 text-sm font-medium text-gray-900"
@@ -389,6 +513,14 @@ function Items() {
             )}
             <div className="bg-white p-8 rounded-md w-full">
                 <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-4 overflow-x-auto pt-0">
+                    <div className='search-bar'>
+                        <input
+                            type="text"
+                            placeholder="Search for products"
+                            className="p-3 border border-gray-300 rounded-lg w-full mb-[20px]"
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
                     <div className="inline-block min-w-full shadow rounded-lg overflow-hidden">
                         <table className="min-w-full leading-normal ">
                             <thead>
@@ -396,51 +528,65 @@ function Items() {
                                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product Id</th>
                                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product Name</th>
                                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
-                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Created at</th>
+                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
                                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Orders</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {Object.entries(productsByCategory).map(([category, products]) => (
-                                    <React.Fragment key={category}>
-                                        {products.map((product) => (
-                                            <tr
-                                                key={product.productID}
-                                                onClick={() => handleProductClick(product)}
-                                                className="cursor-pointer"
-                                            >
-                                                <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                    {product.productID}
-                                                </td>
-                                                <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                    <div className="flex items-center">
-                                                        <div className="flex-shrink-0 w-10 h-10">
-                                                            <img
-                                                                className="w-full h-full"
-                                                                src={product.images[0]}
-                                                                alt={product.name}
-                                                            />
-                                                        </div>
-                                                        <div className="ml-3">
-                                                            <p className="text-gray-900 whitespace-no-wrap">
-                                                                {product.name}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                    {product.category}
-                                                </td>
-                                                <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                    {product.createdAt.split("T")[0]}
-                                                </td>
-                                                <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                                    {product.orders}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </React.Fragment>
-                                ))}
+                                {Object.entries(productsByCategory).map(([category, products]) => {
+                                    const filteredProducts = handleSearch(products);
+                                    return (
+                                        <React.Fragment key={category}>
+                                            {filteredProducts.length > 0 ? (
+                                                filteredProducts.map((product) => (
+                                                    <tr
+                                                        key={product.productID}
+                                                        onClick={() => handleProductClick(product)}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                            {product.productID}
+                                                        </td>
+                                                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                            <div className="flex items-center">
+                                                                <div className="flex-shrink-0 w-10 h-10">
+                                                                    <img
+                                                                        className="w-full h-full"
+                                                                        src={product.images[0]}
+                                                                        alt={product.name}
+                                                                    />
+                                                                </div>
+                                                                <div className="ml-3">
+                                                                    <p className="text-gray-900 whitespace-no-wrap">
+                                                                        {product.name}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                            {product.category}
+                                                        </td>
+                                                        {product.salePrice > 0 ? (
+                                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                                <span className="line-through">${product.price}</span> ${product.salePrice}
+                                                            </td>
+                                                        ) : (
+                                                            <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                                ${product.price}
+                                                            </td>
+                                                        )}
+                                                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                                            {product.orders}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr key={`no-products-${category}`}>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
