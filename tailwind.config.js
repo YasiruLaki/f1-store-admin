@@ -3,6 +3,7 @@ module.exports = {
   content: [
     "./src/pages/Items.js",
     "./src/pages/Login.js",
+    "./src/pages/Orders.js",
     "./src/components/Navbar.js",
     "./src/components/Sidebar.js",
     "./src/components/InputField.js",

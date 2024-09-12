@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 function Items() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +41,20 @@ function Items() {
 
     const handleDeleteTag = (tagToDelete) => {
         setTags(tags.filter(tag => tag !== tagToDelete));
+    };
+
+    const handleOnDragEnd = (result) => {
+        if (!result.destination) return;
+
+        const reorderedImages = Array.from(images);
+        const [movedImage] = reorderedImages.splice(result.source.index, 1);
+        reorderedImages.splice(result.destination.index, 0, movedImage);
+
+        setImages(reorderedImages);
+    };
+
+    const handleDeleteImage = (index) => {
+        setImages(images.filter((_, i) => i !== index));
     };
 
     const openCloudinaryWidget = () => {
@@ -92,7 +107,7 @@ function Items() {
         }
 
         const method = selectedProduct ? 'PUT' : 'POST';
-        const url = `http://localhost:8888/.netlify/functions/submitItem`;
+        const url = `https://f1-store-backend.netlify.app/.netlify/functions/submitItem`;
 
         const requestBody = {
             productID: selectedProduct ? selectedProduct.productID : productId,
@@ -453,17 +468,44 @@ function Items() {
                                     <p>Click here to upload images</p>
                                 </div>
 
-                                <div className="grid grid-cols-4 gap-4 mt-4">
-                                    {images.map((url, index) => (
-                                        <div key={index} className="relative w-24 h-24">
-                                            <img
-                                                src={url}
-                                                alt={`uploaded-image-${index}`}
-                                                className="w-24 h-24 object-cover rounded-lg"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
+                                <DragDropContext onDragEnd={handleOnDragEnd}>
+                                    <Droppable droppableId="images">
+                                        {(provided) => (
+                                            <div
+                                                className="grid grid-cols-4 gap-4 mt-4"
+                                                ref={provided.innerRef}
+                                                {...provided.droppableProps}
+                                            >
+                                                {images.map((url, index) => (
+                                                    <Draggable key={url} draggableId={url} index={index}>
+                                                        {(provided) => (
+                                                            <div
+                                                                className="relative w-24 h-24"
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                {...provided.dragHandleProps}
+                                                            >
+                                                                <img
+                                                                    src={url}
+                                                                    alt={`uploaded-image-${index}`}
+                                                                    className="w-24 h-24 object-cover rounded-lg"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteImage(index)}
+                                                                    className="absolute top-0 right-0 px-[7px] text-white bg-red-600 rounded-full mt-1 mr-1"
+                                                                >
+                                                                    &times;
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </Draggable>
+                                                ))}
+                                                {provided.placeholder}
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                </DragDropContext>
 
                                 <div className="mt-4">
                                     <label
