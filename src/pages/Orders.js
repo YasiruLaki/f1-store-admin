@@ -14,7 +14,7 @@ function Orders() {
 
     const fetchOrders = async () => {
         try {
-            const response = await fetch('http://localhost:8888/.netlify/functions/fetchAdminOrders');
+            const response = await fetch('https://f1-store-backend.netlify.app/.netlify/functions/fetchAdminOrders');
             const data = await response.json();
             setOrders(data);
         } catch (error) {
@@ -24,7 +24,7 @@ function Orders() {
 
     const updateOrderStatus = async (orderId, newStatus) => {
         try {
-            const response = await fetch('http://localhost:8888/.netlify/functions/updateOrderStatus', {
+            const response = await fetch('https://f1-store-backend.netlify.app/.netlify/functions/updateOrderStatus', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
