@@ -4,6 +4,7 @@ import './App.css';
 import ItemsPage from './pages/Items';
 import LoginPage from './pages/Login';
 import OrdersPage from './pages/Orders';
+import SettingsPage from './pages/Settings';
 import "./fonts.css";
 import { AuthProvider } from './auth/AuthContext';
 import ProtectedRoute from './auth/ProtectedRoute';
@@ -17,6 +18,7 @@ function App() {
           <Route path="/products" element={<ProtectedRoute element={<ItemsPage />} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/orders" element={<ProtectedRoute element={<OrdersPage />} />} />
+          <Route path="/site-settings" element={<ProtectedRoute element={<SettingsPage />} />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
